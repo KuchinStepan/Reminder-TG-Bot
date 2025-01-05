@@ -5,7 +5,7 @@
 1) Запустите скрипты для сборки `build.bat`
 2) Запустите собранные файлы `telebot.exe` и `telebot_admin.exe`, положив рядом файлы с настройками:
 - Для `telebot.exe`:
-```json
+```
 {
     "ApiToken": "tg_bot_token",
     "night": 22, // Время до которого бот будет оповещать
@@ -15,7 +15,7 @@
 ```
 
 - Для `telebot_admin.exe`:
-```json
+```
 {
     "ApiToken": "tg_bot_token",
     "AdminId": 123456 // id админа для фильтрации запросов
