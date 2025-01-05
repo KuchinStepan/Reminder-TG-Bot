@@ -33,8 +33,9 @@ MINUTES_OFFSET_DEFAULT = data.get("minutes_offset")
 TOKEN = data.get("ApiToken")
 user_skip_dict: [int, UserSkipInfo] = dict()
 
-users = get_users_from_db()
 
+create_table()
+users = get_users_from_db()
 
 bot = telebot.TeleBot(TOKEN)
 
@@ -61,7 +62,7 @@ def update_user_skip(user: User):
     user_skip_dict[user.user_id] = UserSkipInfo(should_skip)
 
 
-create_table()
+
 set_user_skips()
 
 
