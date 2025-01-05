@@ -2,13 +2,13 @@
 import threading
 import time
 import json
-import logging
 
 from datetime import datetime
 from telebot import types
 from telebot.apihelper import ApiTelegramException
 
 from common.db import create_table, get_users_from_db, update_user_in_db, add_user_to_db
+from common.tg_logging import set_logger
 from common.user import User
 
 
@@ -22,15 +22,6 @@ class UserSkipInfo:
 
     def new_cycle(self):
         self.skipped = 0
-
-
-class MaskingFilter(logging.Filter):
-    def __init__(self):
-        super().__init__()
-
-    def filter(self, record):
-        record.msg = record.msg.replace(TOKEN, '<API_TOKEN>')
-        return True
 
 
 with open('settings.json') as f:
@@ -48,18 +39,7 @@ users = get_users_from_db()
 bot = telebot.TeleBot(TOKEN)
 
 
-def set_logger():
-    logger = telebot.logger
-    telebot.logger.setLevel(logging.INFO)  # Установите уровень логирования по необходимости
-    handler = logging.FileHandler('telebot_log.txt', mode='a', encoding='utf-8')
-    formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
-    handler.setFormatter(formatter)
-    logger.addHandler(handler)
-    logger.addFilter(MaskingFilter())
-    return logger
-
-
-LOG = set_logger()
+LOG = set_logger(telebot.logger, TOKEN)
 
 
 def log_message(message):
@@ -82,7 +62,6 @@ def update_user_skip(user: User):
 
 
 create_table()
-get_users_from_db(users)
 set_user_skips()
 
 

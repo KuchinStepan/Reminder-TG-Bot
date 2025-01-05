@@ -1,49 +1,28 @@
 ﻿import telebot
-import sqlite3
-import logging
 import time
 import json
 from telebot import types
 
-from common.db import get_users_info
+from common.db import get_users_info, get_users_count
+from common.tg_logging import set_logger
 
 with open('settings.json') as f:
     data = json.load(f)
 
 TOKEN = data.get("ApiToken")
+ADMIN_ID = data.get("AdminId")
 
 
 bot = telebot.TeleBot(TOKEN)
-
-
-def set_logger():
-    logger = telebot.logger
-    telebot.logger.setLevel(logging.INFO)  # Установите уровень логирования по необходимости
-    handler = logging.FileHandler('admin_logs.txt', mode='a', encoding='utf-8')
-    formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
-    handler.setFormatter(formatter)
-    logger.addHandler(handler)
-    return logger
-
-
-LOG = set_logger()
+LOG = set_logger(telebot.logger, TOKEN)
 
 
 def log_error(message):
     LOG.error(message)
 
 
-def get_users_count():
-    conn = sqlite3.connect('users.db')
-    cursor = conn.cursor()
-    cursor.execute("SELECT COUNT(*) FROM users WHERE enabled = 1")
-    count = cursor.fetchone()[0]
-    conn.close()
-    return count
-
-
 def check_admin(user_id):
-    return int(user_id) == 1684300554
+    return int(user_id) == ADMIN_ID
 
 
 @bot.message_handler(commands=['start'])

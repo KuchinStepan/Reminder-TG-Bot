@@ -61,3 +61,12 @@ def get_users_info(enabled=1):
     for row in rows:
         result.append('@{:<30} {} мин'.format(row[0], row[1]))
     return '\n'.join(result)
+
+
+def get_users_count():
+    conn = sqlite3.connect('users.db')
+    cursor = conn.cursor()
+    cursor.execute("SELECT COUNT(*) FROM users WHERE enabled = 1")
+    count = cursor.fetchone()[0]
+    conn.close()
+    return count
