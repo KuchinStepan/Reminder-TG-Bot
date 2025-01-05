@@ -2,31 +2,14 @@
 import threading
 import time
 import json
-import sqlite3
 import logging
 
 from datetime import datetime
 from telebot import types
 from telebot.apihelper import ApiTelegramException
 
-
-class User:
-    def __init__(self, user_id, username, night=22, morning=10, minutes_offset=30, enabled=1):
-        self.night = night
-        self.morning = morning
-        self.minutes_offset = minutes_offset
-        self.user_id = user_id
-        self.username = username
-        self.enabled = enabled
-
-    def __eq__(self, other):
-        return self.user_id == other.user_id
-
-    def __hash__(self):
-        return hash(self.user_id)
-
-    def __repr__(self):
-        return f"User: {self.username}, User ID: {self.user_id}"
+from common.db import create_table, get_users_from_db, update_user_in_db, add_user_to_db
+from common.user import User
 
 
 class UserSkipInfo:
@@ -37,7 +20,7 @@ class UserSkipInfo:
     def can_update(self):
         return self.skipped >= self.should_skip
 
-    def new_cicle(self):
+    def new_cycle(self):
         self.skipped = 0
 
 
@@ -57,8 +40,9 @@ NIGHT = data.get("night")
 MORNING = data.get("morning")
 MINUTES_OFFSET_DEFAULT = data.get("minutes_offset")
 TOKEN = data.get("ApiToken")
-users: dict[int, User] = dict()
 user_skip_dict: [int, UserSkipInfo] = dict()
+
+users = get_users_from_db()
 
 
 bot = telebot.TeleBot(TOKEN)
@@ -86,70 +70,6 @@ def log_error(message):
     LOG.error(message)
 
 
-# def log_message(message):
-#     current_time = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-#     log_entry = f"{current_time} - {message}\n"
-
-#     with open("log.txt", "a", encoding='utf-8') as log_file:
-#         log_file.write(log_entry)
-
-
-# def log_error(message):
-#     current_time = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-#     log_entry = f"{current_time} - {message}\n"
-
-#     with open("errors.txt", "a", encoding='utf-8') as log_file:
-#         log_file.write(log_entry)
-#         log_file.write('\n\n')
-
-
-def create_table():
-    conn = sqlite3.connect('users.db')
-    c = conn.cursor()
-    c.execute('''CREATE TABLE IF NOT EXISTS users
-                 (user_id integer PRIMARY KEY, username text, night integer,
-                 morning integer, minutes_offset integer, enabled integer)''')
-    conn.commit()
-    conn.close()
-
-
-def add_user_to_db(user: User):
-    conn = sqlite3.connect('users.db')
-    c = conn.cursor()
-    c.execute("INSERT INTO users VALUES (?, ?, ?, ?, ?, ?)",
-              (user.user_id, user.username, user.night, user.morning, user.minutes_offset, user.enabled))
-    conn.commit()
-    conn.close()
-
-
-def update_user_in_db(user: User):
-    conn = sqlite3.connect('users.db')
-    c = conn.cursor()
-    c.execute("UPDATE users SET username=?, night=?, morning=?, minutes_offset=?, enabled=? WHERE user_id=?",
-              (user.username, user.night, user.morning, user.minutes_offset, user.enabled, user.user_id))
-    conn.commit()
-    conn.close()
-
-
-def delete_user_from_db(user_id: int):
-    conn = sqlite3.connect('users.db')
-    c = conn.cursor()
-    c.execute("DELETE FROM users WHERE user_id=?", (user_id,))
-    conn.commit()
-    conn.close()
-
-
-def get_users_from_db():
-    conn = sqlite3.connect('users.db')
-    c = conn.cursor()
-    c.execute("SELECT * FROM users")
-    rows = c.fetchall()
-    for row in rows:
-        user = User(row[0], row[1], row[2], row[3], row[4], row[5])
-        users[row[0]] = user
-    conn.close()
-
-
 def set_user_skips():
     for user in users.values():
         should_skip = user.minutes_offset // MINUTES_OFFSET_DEFAULT - 1
@@ -162,7 +82,7 @@ def update_user_skip(user: User):
 
 
 create_table()
-get_users_from_db()
+get_users_from_db(users)
 set_user_skips()
 
 
@@ -178,7 +98,7 @@ def send_messages():
             if user_skip_info.can_update():
                 try:
                     bot.send_message(user.user_id, "Выпрями спину")
-                    user_skip_info.new_cicle()
+                    user_skip_info.new_cycle()
                     sended_users.append(user.username)
                 except ApiTelegramException as e:
                     log_error(f'{user.username}:{user.user_id} недоступен')
